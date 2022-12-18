@@ -6,13 +6,12 @@ package cmd
 
 import (
 	"encoding/xml"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
-	"path/filepath"
 	"strings"
 
+	"github.com/Shitomo/mybatis-mapper-scanner/mapperxml"
 	"github.com/spf13/cobra"
 )
 
@@ -31,33 +30,20 @@ var scanCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		tablesStr, err := cmd.Flags().GetString("tables")
 		if err != nil || tablesStr == "" {
-			log.Default().Printf("tables is required")
+			log.Printf("tables is required")
 		}
 
 		dirPath, err := cmd.Flags().GetString("dir-path")
 		if err != nil || dirPath == "" {
-			log.Default().Panicf("dir-path is required")
+			log.Panicf("dir-path is required")
 		}
 
 		tables := strings.Split(tablesStr, ",")
 
 		// get all mapper file
-		var xmlFiles []string
-		err = filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				fmt.Println(err)
-				return err
-			}
-
-			if strings.Contains(path, ".xml") {
-				xmlFiles = append(xmlFiles, path)
-			}
-
-			return nil
-		})
-
+		xmlFiles, err := mapperxml.GetMapperXmlFiles(dirPath)
 		if err != nil {
-			log.Default().Panic(err)
+			log.Panic(err)
 		}
 
 		// parse mapper
@@ -65,18 +51,18 @@ var scanCmd = &cobra.Command{
 		for _, file := range xmlFiles {
 			file, err := os.Open(file)
 			if err != nil {
-				log.Default().Panic(err)
+				log.Panic(err)
 			}
 
 			data, err := ioutil.ReadAll(file)
 			if err != nil {
-				log.Default().Panic(err)
+				log.Panic(err)
 			}
 
 			mapper := Mapper{}
 			err = xml.Unmarshal(data, &mapper)
 			if err != nil {
-				log.Default().Panic(err)
+				log.Panic(err)
 			}
 
 			mappers = append(mappers, mapper)
@@ -96,7 +82,7 @@ var scanCmd = &cobra.Command{
 			}
 		}
 
-		log.Default().Printf("result: %v", result)
+		log.Printf("result: %v", result)
 	},
 }
 
